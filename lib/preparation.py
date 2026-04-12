@@ -16,7 +16,20 @@ from palimpsest.config import WorkspaceConfig
 logger = logging.getLogger(__name__)
 
 
-def prepare_evo_workspace_override(*, evo_root: str, **kwargs) -> WorkspaceConfig:
+def _resolve_bundle_root(*, bundle_workspace: str = "", evo_root: str = "") -> Path:
+    """Resolve the bundle repository root from new or legacy parameter names."""
+    root = bundle_workspace or evo_root
+    if not root:
+        raise RuntimeError("bundle_workspace or evo_root is required")
+    return Path(root)
+
+
+def prepare_evo_workspace_override(
+    *,
+    bundle_workspace: str = "",
+    evo_root: str = "",
+    **kwargs,
+) -> WorkspaceConfig:
     """Make the live evo_root the agent's workspace.
     
     Used by implementer-style roles that should write directly into the bundle.
@@ -28,13 +41,15 @@ def prepare_evo_workspace_override(*, evo_root: str, **kwargs) -> WorkspaceConfi
     Returns:
         WorkspaceConfig with workspace_override set to evo_root.
     """
-    return WorkspaceConfig(repo="", new_branch=False, workspace_override=evo_root)
+    bundle_root = _resolve_bundle_root(bundle_workspace=bundle_workspace, evo_root=evo_root)
+    return WorkspaceConfig(repo="", new_branch=False, workspace_override=str(bundle_root))
 
 
 def prepare_factorio_runtime(
     *,
     runtime_context,
-    evo_root: str,
+    bundle_workspace: str = "",
+    evo_root: str = "",
     **kwargs,
 ) -> WorkspaceConfig:
     """Sync bundle scripts into the live Factorio mod, reload, then connect RCON.
@@ -42,14 +57,15 @@ def prepare_factorio_runtime(
     Per plan Task 4: worker preparation rebuilds Factorio runtime environment.
     
     Effects:
-    - Copies/syncs evo_root/factorio/scripts/ -> $FACTORIO_MOD_SCRIPTS_DIR
+    - Copies/syncs <bundle_root>/scripts/ -> $FACTORIO_MOD_SCRIPTS_DIR
     - Issues a reload command via RCON
     - Stores RCONClient in runtime_context.resources["rcon"]
     - Registers cleanup to close RCON
     
     Args:
         runtime_context: RuntimeContext to store resources and register cleanup.
-        evo_root: Path to evo repository root.
+        bundle_workspace: Path to the bundle repository root.
+        evo_root: Legacy alias for the bundle repository root.
         
     Returns:
         Empty WorkspaceConfig (worker doesn't need a workspace).
@@ -57,9 +73,13 @@ def prepare_factorio_runtime(
     Raises:
         RuntimeError: If FACTORIO_MOD_SCRIPTS_DIR not set or safety checks fail.
     """
-    from factorio.lib.rcon import RCONClient
-    
-    src = Path(evo_root) / "factorio" / "scripts"
+    from lib.rcon import RCONClient
+
+    bundle_root = _resolve_bundle_root(
+        bundle_workspace=bundle_workspace,
+        evo_root=evo_root,
+    )
+    src = bundle_root / "scripts"
     dst_env = os.environ.get("FACTORIO_MOD_SCRIPTS_DIR")
     
     if not dst_env:
