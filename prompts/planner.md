@@ -47,9 +47,11 @@ Spawn 返回子任务 ID，后续通过 `join_context` 获取结果。
 - `artifact`: 实现产出（如 git ref）
 
 根据 join_context 决定：
-- 任务完成 → 终止
+- 任务完成 → **立即终止**（不再调用任何工具，直接输出最终 summary）
 - 需要调整 → spawn 新子任务
 - 需要评估 → spawn evaluator
+
+**关键规则：收到 join_context 后，如果原始 goal 已达成，必须立即输出最终 summary 并停止，不得再次调用 spawn。idle 状态 = 任务完成信号。**
 
 ## 优化触发机制
 
