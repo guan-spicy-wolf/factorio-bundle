@@ -31,7 +31,7 @@ def implementer(**params) -> JobSpec:
     """
     return JobSpec(
         context_fn=context_spec(
-            system="factorio/prompts/implementer.md",
+            system="prompts/implementer.md",
             sections=[{"type": "factorio_scripts"}],
         ),
         tools=["bash"],

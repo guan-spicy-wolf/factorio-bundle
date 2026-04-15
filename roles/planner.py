@@ -35,7 +35,7 @@ def planner(**params) -> JobSpec:
     """
     return JobSpec(
         context_fn=context_spec(
-            system="factorio/prompts/planner.md",
+            system="prompts/planner.md",
             sections=[],  # Planner doesn't need script listing
         ),
         tools=["spawn"],  # Spawn tool for child job creation

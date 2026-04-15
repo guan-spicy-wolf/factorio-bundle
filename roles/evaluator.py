@@ -80,7 +80,7 @@ def evaluator(**params) -> JobSpec:
     """
     return JobSpec(
         context_fn=context_spec(
-            system="factorio/prompts/evaluator.md",
+            system="prompts/evaluator.md",
             sections=[],
         ),
         tools=["bash"],
